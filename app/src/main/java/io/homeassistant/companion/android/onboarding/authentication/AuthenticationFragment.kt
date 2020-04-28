@@ -3,9 +3,12 @@ package io.homeassistant.companion.android.onboarding.authentication
 import android.annotation.SuppressLint
 import android.net.http.SslError
 import android.os.Bundle
+import android.security.KeyChain
+import android.security.KeyChainAliasCallback
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.ClientCertRequest
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -58,6 +61,25 @@ class AuthenticationFragment : Fragment(), AuthenticationView {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 webViewClient = object : WebViewClient() {
+                    override fun onReceivedClientCertRequest(
+                        view: WebView?,
+                        request: ClientCertRequest?
+                    ) {
+                        Fragment().activity?.let {
+                            KeyChain.choosePrivateKeyAlias(it, KeyChainAliasCallback() {
+                                val alias = it.toString()
+                                val chain =
+                                    view?.context?.let { it1 -> KeyChain.getCertificateChain(it1, alias) }
+                                val key = view?.context?.let { it1 ->
+                                    KeyChain.getPrivateKey(
+                                        it1,
+                                        alias
+                                    )
+                                }
+                                request?.proceed(key, chain)
+                            }, emptyArray(), emptyArray(), url, 20443, null)
+                        }
+                    }
                     override fun shouldOverrideUrlLoading(view: WebView?, url: String): Boolean {
                         return presenter.onRedirectUrl(url)
                     }

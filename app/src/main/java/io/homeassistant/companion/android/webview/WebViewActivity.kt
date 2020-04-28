@@ -14,6 +14,7 @@ import android.util.Log
 import android.util.Rational
 import android.view.MenuInflater
 import android.view.View
+import android.webkit.ClientCertRequest
 import android.webkit.HttpAuthHandler
 import android.webkit.JavascriptInterface
 import android.webkit.JsResult
@@ -41,6 +42,7 @@ import io.homeassistant.companion.android.onboarding.OnboardingActivity
 import io.homeassistant.companion.android.settings.SettingsActivity
 import io.homeassistant.companion.android.util.PermissionManager
 import io.homeassistant.companion.android.util.isStarted
+import okhttp3.tls.HeldCertificate
 import javax.inject.Inject
 import org.json.JSONObject
 
@@ -73,6 +75,14 @@ class WebViewActivity : AppCompatActivity(), io.homeassistant.companion.android.
     private var isVideoFullScreen = false
     private var videoHeight = 0
 
+    private var cert = """-----BEGIN CERTIFICATE-----
+<FOR TESTING>
+-----END CERTIFICATE-----
+-----BEGIN PRIVATE KEY-----
+<FOR TESTING>
+-----END PRIVATE KEY-----"""
+
+    private val key = HeldCertificate.decode(cert)
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,6 +110,12 @@ class WebViewActivity : AppCompatActivity(), io.homeassistant.companion.android.
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             webViewClient = object : WebViewClient() {
+                override fun onReceivedClientCertRequest(
+                    view: WebView?,
+                    request: ClientCertRequest?
+                ) {
+                    request?.proceed(key.keyPair.private, arrayOf(key.certificate))
+                }
                 override fun onReceivedError(
                     view: WebView?,
                     errorCode: Int,

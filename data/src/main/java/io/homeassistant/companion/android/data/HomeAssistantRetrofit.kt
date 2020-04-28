@@ -9,13 +9,31 @@ import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import okhttp3.tls.HandshakeCertificates
+import okhttp3.tls.HeldCertificate
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
+import java.security.cert.CertificateFactory
 
 class HomeAssistantRetrofit @Inject constructor(urlRepository: UrlRepository) {
     companion object {
         private const val LOCAL_HOST = "http://localhost/"
     }
+
+    var cert = """-----BEGIN CERTIFICATE-----
+<FOR TESTING>
+-----END CERTIFICATE-----
+-----BEGIN PRIVATE KEY-----
+<FOR TESTING>
+-----END PRIVATE KEY-----"""
+
+    val key = HeldCertificate.decode(cert)
+    val factory = CertificateFactory.getInstance("X.509")
+
+    private val handshake = HandshakeCertificates.Builder()
+        .addPlatformTrustedCertificates()
+        .heldCertificate(key, key.certificate)
+        .build()
 
     val retrofit: Retrofit = Retrofit
         .Builder()
@@ -44,6 +62,7 @@ class HomeAssistantRetrofit @Inject constructor(urlRepository: UrlRepository) {
                         it.proceed(it.request())
                     }
                 }
+                .sslSocketFactory(handshake.sslSocketFactory(), handshake.trustManager)
                 .build()
         )
         .baseUrl(LOCAL_HOST)

@@ -1,6 +1,6 @@
 ext {
     projectSdkVersion = '29'
-    projectMinSdkVersion = '21'
+    projectMinSdkVersion = '24'
 
     androidxCoreVersion = '1.2.0'
     lifecycleVersion = '2.2.0'
